@@ -26,7 +26,7 @@ steps, and storage swappable independently.
 ```
 Job URL / text / screenshot
         ↓
-   collectors        → extract raw entities (Company, Recruiter, Job, Domain)
+   collectors        → extract raw entities (Company, Publisher, Job, Domain)
         ↓
    enrichment         → chainable steps: domain age, description similarity,
         ↓                cross-referencing careers pages / Greenhouse / Lever / WHOIS
@@ -43,7 +43,7 @@ Job URL / text / screenshot
 |---|---|
 | `api/` | FastAPI routers and request/response handling |
 | `core/` | config, logging, shared exceptions |
-| `schemas/` | Pydantic models shared across every stage (`Job`, `Company`, `Recruiter`, `Domain`, ...) |
+| `schemas/` | Pydantic models shared across every stage (`Job`, `Company`, `Publisher`, `Domain`, `Salary`, ...) |
 | `collectors/` | one module per source, behind a common interface — adding a new source (Indeed, a careers page) means adding a class, not touching the pipeline |
 | `enrichment/` | composable enrichment steps, independently testable |
 | `resolution/` | entity resolution — the hardest problem here, kept isolated from enrichment |

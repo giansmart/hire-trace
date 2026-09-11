@@ -7,7 +7,13 @@ authors = [
     { name = "Giancarlo", email = "giancarlo.poemape@hotmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "alembic>=1.19.2",
+    "asyncpg>=0.31.0",
+    "fastapi>=0.141.1",
+    "pydantic-settings>=2.15.0",
+    "sqlalchemy[asyncio]>=2.0.52",
+]
 
 [build-system]
 requires = ["uv_build>=0.11.7,<0.12.0"]
