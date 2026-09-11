@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -59,6 +60,7 @@ class RequestedData(str, Enum):
 
 
 class Job(BaseModel):
+    id: UUID | None = None
     title: str
     description: str
     url: str

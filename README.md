@@ -23,20 +23,40 @@ Data flows through a pipeline. Each stage only talks to the next through shared 
 models — no stage reaches into another's internals. This keeps sources, enrichment
 steps, and storage swappable independently.
 
-```
-Job URL / text / screenshot
-        ↓
-   collectors        → fetch + persist raw HTML (RawDocument), nothing else
-        ↓
-   extraction         → RawDocument → Job entities (Company, Publisher, Job, Domain);
-        ↓                swappable: heuristic today, LLM-based later, compared side by side
-   enrichment         → chainable steps: domain age, description similarity,
-        ↓                cross-referencing careers pages / Greenhouse / Lever / WHOIS
-   resolution         → entity resolution: is "Micro1" == "micro1.ai" == "Micro1 Inc."?
-        ↓
-   graph              → knowledge graph storage (who shares domains, recruiters,
-        ↓                platforms, near-identical text across postings)
-   api (FastAPI)      → Job Trust Report
+```mermaid
+flowchart TD
+    input(["Job URL / text / screenshot"])
+
+    subgraph built["Built"]
+        collectors["collectors<br/>fetch + persist raw HTML"]
+        rawdocs[("raw_documents")]
+        extraction["extraction<br/>RawDocument → Job<br/>(heuristic today, LLM later)"]
+        jobs[("jobs")]
+    end
+
+    subgraph planned["Planned"]
+        enrichment["enrichment<br/>domain age, description similarity,<br/>cross-reference careers pages / ATS / WHOIS"]
+        resolution["resolution<br/>entity resolution<br/>(is 'Micro1' == 'micro1.ai'?)"]
+        graph["graph<br/>knowledge graph storage"]
+        api["api (FastAPI)"]
+    end
+
+    report(["Job Trust Report"])
+
+    input --> collectors
+    collectors --> rawdocs
+    collectors --> extraction
+    extraction --> jobs
+    extraction --> enrichment
+    enrichment --> resolution
+    resolution --> graph
+    graph --> api
+    api --> report
+
+    classDef built fill:#dff5e1,stroke:#2f9e44,color:#1b4332;
+    classDef planned fill:#f1f3f5,stroke:#adb5bd,color:#495057,stroke-dasharray: 4 3;
+    class collectors,rawdocs,extraction,jobs built;
+    class enrichment,resolution,graph,api planned;
 ```
 
 ### Modules (`src/hire_trace/`)
@@ -75,6 +95,8 @@ Job URL / text / screenshot
 
 ## Status
 
-Early scaffolding. `RawDocument` is persisted in Postgres; a heuristic `JobExtractor`
-turns raw HTML into a `Job`. Building the `collectors → extraction → enrichment → graph`
-flow first, before any frontend.
+Early scaffolding. `RawDocument` and the extracted `Job` (as JSONB for now — the
+shape is still moving) are persisted in Postgres. A heuristic `JobExtractor` parses
+schema.org JSON-LD when present (e.g. LinkedIn posts), falling back to blind
+tag-stripping. Building the `collectors → extraction → enrichment → graph` flow
+first, before any frontend.

@@ -9,6 +9,7 @@ from alembic import context
 from hire_trace.collectors.models import RawDocumentORM  # noqa: F401
 from hire_trace.core.config import get_settings
 from hire_trace.core.db import Base
+from hire_trace.extraction.models import JobORM  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
