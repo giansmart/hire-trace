@@ -26,8 +26,10 @@ steps, and storage swappable independently.
 ```
 Job URL / text / screenshot
         ↓
-   collectors        → extract raw entities (Company, Publisher, Job, Domain)
+   collectors        → fetch + persist raw HTML (RawDocument), nothing else
         ↓
+   extraction         → RawDocument → Job entities (Company, Publisher, Job, Domain);
+        ↓                swappable: heuristic today, LLM-based later, compared side by side
    enrichment         → chainable steps: domain age, description similarity,
         ↓                cross-referencing careers pages / Greenhouse / Lever / WHOIS
    resolution         → entity resolution: is "Micro1" == "micro1.ai" == "Micro1 Inc."?
@@ -42,13 +44,14 @@ Job URL / text / screenshot
 | Module | Responsibility |
 |---|---|
 | `api/` | FastAPI routers and request/response handling |
-| `core/` | config, logging, shared exceptions |
-| `schemas/` | Pydantic models shared across every stage (`Job`, `Company`, `Publisher`, `Domain`, `Salary`, ...) |
-| `collectors/` | one module per source, behind a common interface — adding a new source (Indeed, a careers page) means adding a class, not touching the pipeline |
+| `core/` | config, DB engine/session, shared exceptions |
+| `schemas/` | Pydantic models shared across every stage (`Job`, `Company`, `Publisher`, `Domain`, `Salary`, `RawDocument`, ...) |
+| `collectors/` | fetches and persists raw HTML per source, behind a common interface — adding a new source (Indeed, a careers page) means adding a class, not touching the pipeline |
+| `extraction/` | turns a `RawDocument` into `Job` entities, behind a common `JobExtractor` interface — a naive heuristic today, an LLM-based one later, without touching collectors or anything downstream |
 | `enrichment/` | composable enrichment steps, independently testable |
 | `resolution/` | entity resolution — the hardest problem here, kept isolated from enrichment |
 | `graph/` | storage behind a repository interface (Postgres/pgvector now, Neo4j later without touching business logic) |
-| `pipeline.py` | orchestrates collector → enrichment → resolution → graph |
+| `pipeline.py` | orchestrates collector → extraction → enrichment → resolution → graph |
 
 ### Why this shape
 
@@ -66,11 +69,12 @@ Job URL / text / screenshot
 ## Stack
 
 - **Backend**: FastAPI
-- **Storage (MVP)**: PostgreSQL + pgvector (embeddings for description similarity)
+- **Storage (MVP)**: PostgreSQL + pgvector, via SQLAlchemy (async) + Alembic migrations, in Docker Compose
 - **Graph (later)**: Neo4j, once entity relationships are worth querying as a graph
 - **Package management**: [uv](https://docs.astral.sh/uv/)
 
 ## Status
 
-Early scaffolding. Building the `collectors → enrichment → graph` flow first, before
-any frontend.
+Early scaffolding. `RawDocument` is persisted in Postgres; a heuristic `JobExtractor`
+turns raw HTML into a `Job`. Building the `collectors → extraction → enrichment → graph`
+flow first, before any frontend.
