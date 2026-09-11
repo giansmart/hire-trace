@@ -1,9 +1,10 @@
 from uuid import UUID
 
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from hire_trace.extraction.models import JobPostORM
-from hire_trace.schemas import JobPost
+from hire_trace.schemas import Company, JobPost
 
 
 async def save_job_post(
@@ -27,3 +28,12 @@ async def save_job_post(
     await session.commit()
     await session.refresh(row)
     return job.model_copy(update={"id": row.id})
+
+
+async def set_job_post_company(session: AsyncSession, job_post_id: UUID, company: Company) -> None:
+    await session.execute(
+        update(JobPostORM)
+        .where(JobPostORM.id == job_post_id)
+        .values(company=company.model_dump(mode="json"))
+    )
+    await session.commit()

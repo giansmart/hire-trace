@@ -8,6 +8,7 @@ from hire_trace.schemas.entities import (
     Salary,
     SalaryPeriod,
 )
+from hire_trace.schemas.raw_application_page import RawApplicationPage
 from hire_trace.schemas.raw_post import RawPost
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "JobPost",
     "Publisher",
     "PublisherType",
+    "RawApplicationPage",
     "RawPost",
     "RequestedData",
     "Salary",

@@ -1,9 +1,19 @@
 import json
 import re
 from datetime import datetime
+from urllib.parse import urlparse
 
 from hire_trace.extraction.base import JobExtractor
-from hire_trace.schemas import JobPost, Publisher, PublisherType, RawPost, Salary, SalaryPeriod
+from hire_trace.schemas import (
+    Company,
+    Domain,
+    JobPost,
+    Publisher,
+    PublisherType,
+    RawPost,
+    Salary,
+    SalaryPeriod,
+)
 
 _LDJSON_RE = re.compile(
     r'<script type="application/ld\+json"[^>]*>(.*?)</script>', re.IGNORECASE | re.DOTALL
@@ -34,6 +44,7 @@ _PERIOD_MAP = {
 
 _URL_RE = re.compile(r"https?://\S+")
 _TRAILING_PUNCTUATION_RE = re.compile(r"[)\].,;:!?]+$")
+_YEAR_RE = re.compile(r"\d{4}")
 
 
 class HeuristicExtractor(JobExtractor):
@@ -59,15 +70,28 @@ class HeuristicExtractor(JobExtractor):
             return self._from_structured(raw, posting)
         return self._from_plain_html(raw)
 
-    def _find_structured_posting(self, html: str) -> dict | None:
+    def extract_company(self, html: str, source_url: str | None = None) -> Company | None:
+        """Looks for a schema.org Organization block — e.g. the hiring company's
+        own careers page usually has one, richer than a JobPosting's bare
+        hiringOrganization stub (founding date, description, social profiles)."""
+        for candidate in self._iter_ldjson(html):
+            if isinstance(candidate, dict) and candidate.get("@type") == "Organization":
+                return self._company_from_organization(candidate, source_url)
+        return None
+
+    @staticmethod
+    def _iter_ldjson(html: str):
         for match in _LDJSON_RE.finditer(html):
             try:
                 data = json.loads(match.group(1))
             except json.JSONDecodeError:
                 continue
-            for candidate in data if isinstance(data, list) else [data]:
-                if isinstance(candidate, dict) and candidate.get("@type") in _STRUCTURED_TYPES:
-                    return candidate
+            yield from (data if isinstance(data, list) else [data])
+
+    def _find_structured_posting(self, html: str) -> dict | None:
+        for candidate in self._iter_ldjson(html):
+            if isinstance(candidate, dict) and candidate.get("@type") in _STRUCTURED_TYPES:
+                return candidate
         return None
 
     def _from_structured(self, raw: RawPost, posting: dict) -> JobPost:
@@ -122,6 +146,30 @@ class HeuristicExtractor(JobExtractor):
             max=float(match.group("max").replace(",", "")) if match.group("max") else None,
             currency=match.group("currency"),
             period=_PERIOD_MAP.get(period.lower()) if period else None,
+        )
+
+    @staticmethod
+    def _company_from_organization(org: dict, source_url: str | None) -> Company:
+        url = org.get("url")
+        hostname = urlparse(url).hostname if url else None
+
+        logo = org.get("logo")
+        logo_url = logo.get("url") if isinstance(logo, dict) else logo
+
+        same_as = org.get("sameAs") or []
+        social_profiles = same_as if isinstance(same_as, list) else [same_as]
+
+        year_match = _YEAR_RE.search(org.get("foundingDate") or "")
+
+        return Company(
+            name=org["name"],
+            legal_name=org.get("legalName"),
+            domain=Domain(hostname=hostname) if hostname else None,
+            description=org.get("description"),
+            founded_year=int(year_match.group()) if year_match else None,
+            logo_url=logo_url,
+            social_profiles=social_profiles,
+            source_urls=[source_url] if source_url else [],
         )
 
     @staticmethod

@@ -13,8 +13,13 @@ class Domain(BaseModel):
 
 class Company(BaseModel):
     name: str
+    legal_name: str | None = None
     domain: Domain | None = None
     careers_url: str | None = None
+    description: str | None = None
+    founded_year: int | None = None
+    logo_url: str | None = None
+    social_profiles: list[str] = []
     source_urls: list[str] = []
 
 

@@ -6,7 +6,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-from hire_trace.collectors.models import RawPostORM  # noqa: F401
+from hire_trace.collectors.models import RawApplicationPageORM, RawPostORM  # noqa: F401
 from hire_trace.core.config import get_settings
 from hire_trace.core.db import Base
 from hire_trace.extraction.models import JobPostORM  # noqa: F401
