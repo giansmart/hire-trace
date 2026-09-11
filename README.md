@@ -37,7 +37,7 @@ flowchart TD
     subgraph planned["Planned"]
         enrichment["enrichment<br/>domain age, description similarity,<br/>cross-reference careers pages / ATS / WHOIS"]
         resolution["resolution<br/>entity resolution<br/>(is 'Micro1' == 'micro1.ai'?)"]
-        graph["graph<br/>knowledge graph storage"]
+        kgraph["graph<br/>knowledge graph storage"]
         api["api (FastAPI)"]
     end
 
@@ -49,14 +49,14 @@ flowchart TD
     extraction --> jobs
     extraction --> enrichment
     enrichment --> resolution
-    resolution --> graph
-    graph --> api
+    resolution --> kgraph
+    kgraph --> api
     api --> report
 
     classDef built fill:#dff5e1,stroke:#2f9e44,color:#1b4332;
     classDef planned fill:#f1f3f5,stroke:#adb5bd,color:#495057,stroke-dasharray: 4 3;
     class collectors,rawdocs,extraction,jobs built;
-    class enrichment,resolution,graph,api planned;
+    class enrichment,resolution,kgraph,api planned;
 ```
 
 ### Modules (`src/hire_trace/`)
