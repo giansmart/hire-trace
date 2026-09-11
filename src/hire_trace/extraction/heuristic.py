@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 
 from hire_trace.extraction.base import JobExtractor
-from hire_trace.schemas import Job, Publisher, PublisherType, RawDocument, Salary, SalaryPeriod
+from hire_trace.schemas import JobPost, Publisher, PublisherType, RawPost, Salary, SalaryPeriod
 
 _LDJSON_RE = re.compile(
     r'<script type="application/ld\+json"[^>]*>(.*?)</script>', re.IGNORECASE | re.DOTALL
@@ -32,6 +32,9 @@ _PERIOD_MAP = {
     "hourly": SalaryPeriod.hourly,
 }
 
+_URL_RE = re.compile(r"https?://\S+")
+_TRAILING_PUNCTUATION_RE = re.compile(r"[)\].,;:!?]+$")
+
 
 class HeuristicExtractor(JobExtractor):
     """Best-effort, no-ML extractor.
@@ -43,9 +46,14 @@ class HeuristicExtractor(JobExtractor):
 
     Company is intentionally left unset for now: telling "the company hiring"
     apart from "the person who posted" needs more than this heuristic.
+
+    application_url is the last link found in the post text (both legit and
+    fake postings redirect to an external link, usually a shortened one like
+    lnkd.in — resolving where it actually goes is enrichment's job, not this
+    extractor's).
     """
 
-    def extract(self, raw: RawDocument) -> Job:
+    def extract(self, raw: RawPost) -> JobPost:
         posting = self._find_structured_posting(raw.html)
         if posting is not None:
             return self._from_structured(raw, posting)
@@ -62,7 +70,7 @@ class HeuristicExtractor(JobExtractor):
                     return candidate
         return None
 
-    def _from_structured(self, raw: RawDocument, posting: dict) -> Job:
+    def _from_structured(self, raw: RawPost, posting: dict) -> JobPost:
         body = _TAG_RE.sub(" ", posting.get("articleBody") or posting.get("description") or "")
         description = self._clean_multiline(body)
         title = self._guess_title(body) or posting.get("headline") or "Untitled"
@@ -74,22 +82,23 @@ class HeuristicExtractor(JobExtractor):
             else None
         )
 
-        return Job(
+        return JobPost(
             title=title,
             description=description,
             url=raw.url or "",
             source=raw.source,
             publisher=publisher,
             salary=self._guess_salary(description),
+            application_url=self._guess_application_url(description),
             posted_at=self._parse_date(posting.get("datePublished")),
         )
 
-    def _from_plain_html(self, raw: RawDocument) -> Job:
+    def _from_plain_html(self, raw: RawPost) -> JobPost:
         title_match = _TITLE_TAG_RE.search(raw.html)
         title = self._collapse_all(title_match.group(1)) if title_match else "Untitled"
         description = self._collapse_all(_TAG_RE.sub(" ", raw.html))
 
-        return Job(
+        return JobPost(
             title=title,
             description=description,
             url=raw.url or "",
@@ -114,6 +123,13 @@ class HeuristicExtractor(JobExtractor):
             currency=match.group("currency"),
             period=_PERIOD_MAP.get(period.lower()) if period else None,
         )
+
+    @staticmethod
+    def _guess_application_url(text: str) -> str | None:
+        urls = _URL_RE.findall(text)
+        if not urls:
+            return None
+        return _TRAILING_PUNCTUATION_RE.sub("", urls[-1])
 
     @staticmethod
     def _parse_date(value: str | None) -> datetime | None:

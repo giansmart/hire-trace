@@ -29,9 +29,9 @@ flowchart TD
 
     subgraph built["Built"]
         collectors["collectors<br/>fetch + persist raw HTML"]
-        rawdocs[("raw_documents")]
-        extraction["extraction<br/>RawDocument → Job<br/>(heuristic today, LLM later)"]
-        jobs[("jobs")]
+        rawposts[("raw_posts")]
+        extraction["extraction<br/>RawPost → JobPost<br/>(heuristic today, LLM later)"]
+        jobposts[("job_posts")]
     end
 
     subgraph planned["Planned"]
@@ -44,9 +44,9 @@ flowchart TD
     report(["Job Trust Report"])
 
     input --> collectors
-    collectors --> rawdocs
+    collectors --> rawposts
     collectors --> extraction
-    extraction --> jobs
+    extraction --> jobposts
     extraction --> enrichment
     enrichment --> resolution
     resolution --> kgraph
@@ -55,7 +55,7 @@ flowchart TD
 
     classDef built fill:#dff5e1,stroke:#2f9e44,color:#1b4332;
     classDef planned fill:#f1f3f5,stroke:#adb5bd,color:#495057,stroke-dasharray: 4 3;
-    class collectors,rawdocs,extraction,jobs built;
+    class collectors,rawposts,extraction,jobposts built;
     class enrichment,resolution,kgraph,api planned;
 ```
 
@@ -65,9 +65,9 @@ flowchart TD
 |---|---|
 | `api/` | FastAPI routers and request/response handling |
 | `core/` | config, DB engine/session, shared exceptions |
-| `schemas/` | Pydantic models shared across every stage (`Job`, `Company`, `Publisher`, `Domain`, `Salary`, `RawDocument`, ...) |
-| `collectors/` | fetches and persists raw HTML per source, behind a common interface — adding a new source (Indeed, a careers page) means adding a class, not touching the pipeline |
-| `extraction/` | turns a `RawDocument` into `Job` entities, behind a common `JobExtractor` interface — a naive heuristic today, an LLM-based one later, without touching collectors or anything downstream |
+| `schemas/` | Pydantic models shared across every stage (`JobPost`, `Company`, `Publisher`, `Domain`, `Salary`, `RawPost`, ...) |
+| `collectors/` | fetches and persists raw HTML per source (`raw_posts`), behind a common interface — adding a new source (Indeed, a careers page) means adding a class, not touching the pipeline |
+| `extraction/` | turns a `RawPost` into a `JobPost` (`job_posts`), behind a common `JobExtractor` interface — a naive heuristic today, an LLM-based one later, without touching collectors or anything downstream |
 | `enrichment/` | composable enrichment steps, independently testable |
 | `resolution/` | entity resolution — the hardest problem here, kept isolated from enrichment |
 | `graph/` | storage behind a repository interface (Postgres/pgvector now, Neo4j later without touching business logic) |
@@ -95,8 +95,11 @@ flowchart TD
 
 ## Status
 
-Early scaffolding. `RawDocument` and the extracted `Job` (as JSONB for now — the
-shape is still moving) are persisted in Postgres. A heuristic `JobExtractor` parses
-schema.org JSON-LD when present (e.g. LinkedIn posts), falling back to blind
-tag-stripping. Building the `collectors → extraction → enrichment → graph` flow
-first, before any frontend.
+Early scaffolding. `RawPost` (`raw_posts`) and the extracted `JobPost` (`job_posts`,
+with company/publisher/salary as JSONB for now — the shape is still moving) are
+persisted in Postgres, kept as separate tables since extraction can lag behind
+capture (especially once an LLM-based extractor is in the mix). A heuristic
+`JobExtractor` parses schema.org JSON-LD when present (e.g. LinkedIn posts,
+including the external application link every posting redirects to), falling back
+to blind tag-stripping. Building the `collectors → extraction → enrichment → graph`
+flow first, before any frontend.

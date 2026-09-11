@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import httpx
 
 from hire_trace.collectors.base import Fetcher
-from hire_trace.schemas import RawDocument
+from hire_trace.schemas import RawPost
 
 
 class HttpFetcher(Fetcher):
@@ -13,9 +13,9 @@ class HttpFetcher(Fetcher):
     def __init__(self, client: httpx.AsyncClient | None = None) -> None:
         self._client = client or httpx.AsyncClient(follow_redirects=True, timeout=10.0)
 
-    async def fetch(self, url: str) -> RawDocument:
+    async def fetch(self, url: str) -> RawPost:
         response = await self._client.get(url)
-        return RawDocument(
+        return RawPost(
             url=url,
             html=response.text,
             source="http",

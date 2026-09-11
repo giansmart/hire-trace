@@ -2,18 +2,21 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from hire_trace.extraction.models import JobORM
-from hire_trace.schemas import Job
+from hire_trace.extraction.models import JobPostORM
+from hire_trace.schemas import JobPost
 
 
-async def save_job(session: AsyncSession, job: Job, raw_document_id: UUID, extractor: str) -> Job:
-    row = JobORM(
-        raw_document_id=raw_document_id,
+async def save_job_post(
+    session: AsyncSession, job: JobPost, raw_post_id: UUID, extractor: str
+) -> JobPost:
+    row = JobPostORM(
+        raw_post_id=raw_post_id,
         extractor=extractor,
         title=job.title,
         description=job.description,
         url=job.url,
         source=job.source,
+        application_url=job.application_url,
         posted_at=job.posted_at,
         company=job.company.model_dump(mode="json") if job.company else None,
         publisher=job.publisher.model_dump(mode="json") if job.publisher else None,

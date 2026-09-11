@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
-class RawDocument(BaseModel):
+class RawPost(BaseModel):
     id: UUID | None = None
     url: str | None = None
     html: str

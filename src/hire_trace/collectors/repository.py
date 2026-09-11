@@ -1,11 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from hire_trace.collectors.models import RawDocumentORM
-from hire_trace.schemas import RawDocument
+from hire_trace.collectors.models import RawPostORM
+from hire_trace.schemas import RawPost
 
 
-async def save_raw_document(session: AsyncSession, raw: RawDocument) -> RawDocument:
-    row = RawDocumentORM(
+async def save_raw_post(session: AsyncSession, raw: RawPost) -> RawPost:
+    row = RawPostORM(
         url=raw.url,
         html=raw.html,
         source=raw.source,

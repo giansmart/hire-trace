@@ -59,7 +59,7 @@ class RequestedData(str, Enum):
     crypto = "crypto"
 
 
-class Job(BaseModel):
+class JobPost(BaseModel):
     id: UUID | None = None
     title: str
     description: str
@@ -68,5 +68,6 @@ class Job(BaseModel):
     company: Company | None = None
     publisher: Publisher | None = None
     salary: Salary | None = None
+    application_url: str | None = None
     requested_data: list[RequestedData] = []
     posted_at: datetime | None = None

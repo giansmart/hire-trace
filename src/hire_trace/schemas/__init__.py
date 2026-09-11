@@ -1,22 +1,22 @@
 from hire_trace.schemas.entities import (
     Company,
     Domain,
-    Job,
+    JobPost,
     Publisher,
     PublisherType,
     RequestedData,
     Salary,
     SalaryPeriod,
 )
-from hire_trace.schemas.raw_document import RawDocument
+from hire_trace.schemas.raw_post import RawPost
 
 __all__ = [
     "Company",
     "Domain",
-    "Job",
+    "JobPost",
     "Publisher",
     "PublisherType",
-    "RawDocument",
+    "RawPost",
     "RequestedData",
     "Salary",
     "SalaryPeriod",
